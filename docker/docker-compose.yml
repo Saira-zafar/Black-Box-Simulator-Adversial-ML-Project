@@ -1,0 +1,47 @@
+version: "3.8"
+
+networks:
+  sandbox_net:
+    driver: bridge
+
+services:
+  training_target:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.target
+    container_name: bb_training_target
+    ports:
+      - "8001:8001"
+    networks:
+      - sandbox_net
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+    container_name: bb_simulator_backend
+    ports:
+      - "8000:8000"
+    networks:
+      - sandbox_net
+    depends_on:
+      - training_target
+    environment:
+      - TRAINING_TARGET_URL=http://training_target:8001
+    volumes:
+      - ../reports:/app/reports
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+    container_name: bb_simulator_frontend
+    ports:
+      - "5173:80"
+    networks:
+      - sandbox_net
+    depends_on:
+      - backend
+    restart: unless-stopped
